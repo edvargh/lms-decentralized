@@ -1,0 +1,20 @@
+# Maven
+target/
+**/target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+
+# Docker volumes (safety)
+mysql_identity_data/
