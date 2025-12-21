@@ -46,6 +46,7 @@ import pt.psoft.g1.psoftg1.usermanagement.model.Role;
 
 import lombok.RequiredArgsConstructor;
 import pt.psoft.g1.psoftg1.usermanagement.repositories.UserRepository;
+import pt.psoft.g1.psoftg1.usermanagement.services.UserService;
 
 /**
  * Check https://www.baeldung.com/security-spring and
@@ -93,6 +94,7 @@ public class SecurityConfig {
         .orElseThrow(() -> new UsernameNotFoundException(format("User: %s, not found", username)));
   }
 
+
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     // Enable CORS and disable CSRF
@@ -109,8 +111,11 @@ public class SecurityConfig {
     // Set permissions on endpoints
     http.authorizeHttpRequests()
         // Swagger endpoints must be publicly accessible
-        .requestMatchers("/").permitAll().requestMatchers(format("%s/**", restApiDocPath)).permitAll()
-        .requestMatchers(format("%s/**", swaggerPath)).permitAll()
+        .requestMatchers(
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+        ).permitAll()
         // Our public endpoints
         .requestMatchers("/api/public/**").permitAll() // public assets & end-points
         .requestMatchers(HttpMethod.POST, "/api/readers").permitAll() //unregistered should be able to register

@@ -66,25 +66,25 @@ public class User implements UserDetails {
 
   // auditing info
   @CreatedDate
-  @Column(nullable = false, updatable = false)
+  @Column(updatable = false)
   @Getter
   private LocalDateTime createdAt;
 
   // auditing info
   @LastModifiedDate
-  @Column(nullable = false)
+  @Column()
   @Getter
   private LocalDateTime modifiedAt;
 
   // auditing info
   @CreatedBy
-  @Column(nullable = false, updatable = false)
+  @Column(updatable = false)
   @Getter
   private String createdBy;
 
   // auditing info
   @LastModifiedBy
-  @Column(nullable = false)
+  @Column()
   private String modifiedBy;
 
   @Setter
