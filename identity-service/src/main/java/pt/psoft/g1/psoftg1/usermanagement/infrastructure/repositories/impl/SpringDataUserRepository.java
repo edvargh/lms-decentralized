@@ -126,8 +126,9 @@ class UserRepoCustomImpl implements UserRepoCustom {
     if (StringUtils.hasText(query.getUsername())) {
       where.add(cb.equal(root.get("username"), query.getUsername()));
     }
-    if (StringUtils.hasText(query.getFullName())) {
-      where.add(cb.like(root.get("fullName"), "%" + query.getFullName() + "%"));
+    if (StringUtils.hasText(query.getName())) {
+      where.add(cb.like(root.get("name").get("name")
+          , "%" + query.getName() + "%"));
     }
 
     // search using OR
