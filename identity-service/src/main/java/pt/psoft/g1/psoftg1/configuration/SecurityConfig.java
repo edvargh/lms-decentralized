@@ -172,11 +172,17 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.PATCH,"/api/lendings/{year}/{seq}").hasRole(Role.READER)
         .requestMatchers(HttpMethod.POST,"/api/lendings/search").hasAnyRole(Role.LIBRARIAN)
         //end lendings
+
+        .requestMatchers("/api/admin/**").hasAnyRole(Role.ADMIN, Role.LIBRARIAN)
+
         // Admin has access to all endpoints
         .requestMatchers("/**").hasRole(Role.ADMIN)
-        .anyRequest().authenticated()
+        .anyRequest().authenticated();
         // Set up oauth2 resource server
-        .and().httpBasic(Customizer.withDefaults()).oauth2ResourceServer().jwt();
+        http.httpBasic(Customizer.withDefaults());
+        http.oauth2ResourceServer(oauth2 -> oauth2
+            .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+        );
 
     return http.build();
   }
