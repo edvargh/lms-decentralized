@@ -121,13 +121,6 @@ public class BookServiceImpl implements BookService {
 	}
 
 	@Override
-	public List<BookCountDTO> findTop5BooksLent(){
-		LocalDate oneYearAgo = LocalDate.now().minusYears(1);
-		Pageable pageableRules = PageRequest.of(0,5);
-		return this.bookRepository.findTop5BooksLent(oneYearAgo, pageableRules).getContent();
-	}
-
-	@Override
 	public Book removeBookPhoto(String isbn, long desiredVersion) {
 		Book book = this.findByIsbn(isbn);
 		String photoFile;

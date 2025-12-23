@@ -30,15 +30,6 @@ public interface SpringDataBookRepository  extends BookRepository, BookRepoCusto
             "WHERE b.isbn.isbn = :isbn")
     Optional<Book> findByIsbn(@Param("isbn") String isbn);
 
-    @Override
-    @Query("SELECT new pt.psoft.g1.psoftg1.bookmanagement.services.BookCountDTO(b, COUNT(l)) " +
-                "FROM Book b " +
-                "JOIN Lending l ON l.book = b " +
-                "WHERE l.startDate > :oneYearAgo " +
-                "GROUP BY b " +
-                "ORDER BY COUNT(l) DESC")
-    Page<BookCountDTO> findTop5BooksLent(@Param("oneYearAgo") LocalDate oneYearAgo, Pageable pageable);
-
 
     @Override
     @Query("SELECT b " +

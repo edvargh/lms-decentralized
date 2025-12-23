@@ -201,7 +201,7 @@ public class BookController {
     @Operation(summary = "Gets the top 5 books lent")
     @GetMapping("top5")
     public ListResponse<BookCountView> getTop5BooksLent() {
-        return new ListResponse<>(bookViewMapper.toBookCountView(bookService.findTop5BooksLent()));
+        return new ListResponse<>(java.util.List.of());
     }
 
     @Operation(summary = "Gets some books suggestions based on the reader's interests")

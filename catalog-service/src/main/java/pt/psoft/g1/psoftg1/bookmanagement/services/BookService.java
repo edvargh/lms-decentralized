@@ -17,7 +17,6 @@ public interface BookService {
     List<Book> findByGenre(String genre);
     List<Book> findByTitle(String title);
     List<Book> findByAuthorName(String authorName);
-    List<BookCountDTO> findTop5BooksLent();
     Book removeBookPhoto(String isbn, long desiredVersion);
     List<Book> searchBooks(Page page, SearchBooksQuery query);
 }
