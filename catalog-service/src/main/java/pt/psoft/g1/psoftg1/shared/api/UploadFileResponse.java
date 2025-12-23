@@ -18,20 +18,52 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package pt.psoft.g1.psoftg1.usermanagement.services;
+package pt.psoft.g1.psoftg1.shared.api;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * Based on https://github.com/Yoh0xFF/java-spring-security-example
+ * <p>
+ * code based on
+ * https://github.com/callicoder/spring-boot-file-upload-download-rest-api-example
+ *
  *
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class SearchUsersQuery {
-  private String username;
-  private String name;
+@Schema(description = "Metadata about the uploaded file")
+public class UploadFileResponse {
+
+	private final String fileName;
+
+	@Schema(description = "Absolute URL of the file")
+	private final String fileDownloadUri;
+
+	@Schema(description = "Media type")
+	private final String fileType;
+
+	@Schema(description = "File size in bytes")
+	private final long size;
+
+	public UploadFileResponse(final String fileName, final String fileDownloadUri, final String fileType,
+                              final long size) {
+		this.fileName = fileName;
+		this.fileDownloadUri = fileDownloadUri;
+		this.fileType = fileType;
+		this.size = size;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public String getFileDownloadUri() {
+		return fileDownloadUri;
+	}
+
+	public String getFileType() {
+		return fileType;
+	}
+
+	public long getSize() {
+		return size;
+	}
 }
