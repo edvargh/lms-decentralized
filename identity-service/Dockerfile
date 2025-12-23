@@ -5,12 +5,14 @@ WORKDIR /workspace
 COPY pom.xml pom.xml
 COPY common-contracts/pom.xml common-contracts/pom.xml
 COPY identity-service/pom.xml identity-service/pom.xml
+COPY catalog-service/pom.xml catalog-service/pom.xml
 
 RUN mvn -q -pl identity-service -am -DskipTests dependency:go-offline
 
 # Copy full module folders (works even if src/ is missing or differently structured)
 COPY common-contracts common-contracts
 COPY identity-service identity-service
+COPY catalog-service catalog-service
 
 RUN mvn -q -pl identity-service -am -DskipTests package
 

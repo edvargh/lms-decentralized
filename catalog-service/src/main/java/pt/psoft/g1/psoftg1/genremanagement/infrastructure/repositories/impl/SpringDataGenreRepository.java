@@ -17,7 +17,7 @@ import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
 import pt.psoft.g1.psoftg1.genremanagement.services.GenreLendingsDTO;
 import pt.psoft.g1.psoftg1.genremanagement.services.GenreLendingsPerMonthDTO;
-import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
+//import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
 
 import java.time.LocalDate;
 import java.util.*;

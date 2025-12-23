@@ -24,7 +24,7 @@ import pt.psoft.g1.psoftg1.bookmanagement.services.SearchBooksQuery;
 import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
-import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
+//import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.services.ReaderService;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/books")
 public class BookController {
     private final BookService bookService;
-    private final LendingService lendingService;
+    //private final LendingService lendingService;
     private final ConcurrencyService concurrencyService;
     private final FileStorageService fileStorageService;
     private final UserService userService;
@@ -230,7 +230,7 @@ public class BookController {
 
         return new ListResponse<>(bookViewMapper.toBookView(bookService.getBooksSuggestionsForReader(readerDetails.getReaderNumber())));
     }
-
+/*
     @Operation(summary = "Get average lendings duration")
     @GetMapping(value = "/{isbn}/avgDuration")
     public @ResponseBody ResponseEntity<BookAverageLendingDurationView>getAvgLendingDurationByIsbn(
@@ -240,7 +240,7 @@ public class BookController {
 
         return ResponseEntity.ok().body(bookViewMapper.toBookAverageLendingDurationView(book, avgDuration));
     }
-
+*/
     @PostMapping("/search")
     public ListResponse<BookView> searchBooks(
             @RequestBody final SearchRequest<SearchBooksQuery> request) {
