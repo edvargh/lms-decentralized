@@ -17,6 +17,7 @@ import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
+import pt.psoft.g1.psoftg1.shared.id.IdGenerator;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -34,6 +35,7 @@ public class BookServiceImpl implements BookService {
 	private final GenreRepository genreRepository;
 	private final AuthorRepository authorRepository;
 	private final PhotoRepository photoRepository;
+	private final IdGenerator idGenerator;
 
 	@Value("${suggestionsLimitPerGenre}")
 	private long suggestionsLimitPerGenre;
@@ -69,6 +71,7 @@ public class BookServiceImpl implements BookService {
 				.orElseThrow(() -> new NotFoundException("Genre not found"));
 
 		Book newBook = new Book(isbn, request.getTitle(), request.getDescription(), genre, authors, photoURI);
+		newBook.assignPk(idGenerator.newId());
 
 		return bookRepository.save(newBook);
 	}
