@@ -17,9 +17,6 @@ import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
-//import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
-//import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
-import pt.psoft.g1.psoftg1.shared.id.IdGenerator;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -37,13 +34,10 @@ public class BookServiceImpl implements BookService {
 	private final GenreRepository genreRepository;
 	private final AuthorRepository authorRepository;
 	private final PhotoRepository photoRepository;
-	//private final ReaderRepository readerRepository;
-	private final IdGenerator idGenerator;
 
 	@Value("${suggestionsLimitPerGenre}")
 	private long suggestionsLimitPerGenre;
 
-	@org.springframework.cache.annotation.CacheEvict(cacheNames = "bookByIsbn", key = "#isbn")
 	@Override
 	public Book create(CreateBookRequest request, String isbn) {
 
@@ -75,7 +69,6 @@ public class BookServiceImpl implements BookService {
 				.orElseThrow(() -> new NotFoundException("Genre not found"));
 
 		Book newBook = new Book(isbn, request.getTitle(), request.getDescription(), genre, authors, photoURI);
-		newBook.assignPk(idGenerator.newId());
 
 		return bookRepository.save(newBook);
 	}
@@ -129,13 +122,6 @@ public class BookServiceImpl implements BookService {
 		return this.bookRepository.save(book);
 	}
 
-	@Override
-	public List<BookCountDTO> findTop5BooksLent(){
-		LocalDate oneYearAgo = LocalDate.now().minusYears(1);
-		Pageable pageableRules = PageRequest.of(0,5);
-		return this.bookRepository.findTop5BooksLent(oneYearAgo, pageableRules).getContent();
-	}
-
 	@org.springframework.cache.annotation.CacheEvict(cacheNames = "bookByIsbn", key = "#isbn")
 	@Override
 	public Book removeBookPhoto(String isbn, long desiredVersion) {
@@ -158,6 +144,10 @@ public class BookServiceImpl implements BookService {
 		return this.bookRepository.findByGenre(genre);
 	}
 
+	public Book findByIsbn(String isbn) {
+        return this.bookRepository.findByIsbn(isbn).orElseThrow(() -> new NotFoundException(Book.class, isbn));
+    }
+
 	public List<Book> findByTitle(String title) {
 		return bookRepository.findByTitle(title);
 	}
@@ -167,44 +157,6 @@ public class BookServiceImpl implements BookService {
 		return bookRepository.findByAuthorName(authorName + "%");
 	}
 
-	@org.springframework.cache.annotation.Cacheable(cacheNames = "bookByIsbn", key = "#isbn")
-	public Book findByIsbn(String isbn) {
-		return this.bookRepository.findByIsbn(isbn)
-				.orElseThrow(() -> new NotFoundException(Book.class, isbn));
-	}
-/*
-	public List<Book> getBooksSuggestionsForReader(String readerNumber) {
-		List<Book> books = new ArrayList<>();
-
-		ReaderDetails readerDetails = readerRepository.findByReaderNumber(readerNumber)
-				.orElseThrow(() -> new NotFoundException("Reader not found with provided login"));
-		List<Genre> interestList = readerDetails.getInterestList();
-
-		if(interestList.isEmpty()) {
-			throw new NotFoundException("Reader has no interests");
-		}
-
-		for(Genre genre : interestList) {
-			List<Book> tempBooks = bookRepository.findByGenre(genre.toString());
-			if(tempBooks.isEmpty()) {
-				continue;
-			}
-
-			long genreBookCount = 0;
-
-            for (Book loopBook : tempBooks) {
-                if (genreBookCount >= suggestionsLimitPerGenre) {
-                    break;
-                }
-
-                books.add(loopBook);
-				genreBookCount++;
-            }
-		}
-
-		return books;
-	}
-*/
 	@Override
 	public List<Book> searchBooks(Page page, SearchBooksQuery query) {
 		if (page == null) {

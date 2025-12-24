@@ -4,8 +4,6 @@ import org.mapstruct.Named;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
-import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
-import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,17 +28,6 @@ public abstract class MapperInterface {
 
     public <T> T mapOpt(final Optional<T> i) {return i.orElse(null);}
 
-    @Named(value = "lendingLink")
-    protected Map<String, String> mapLendingLink(Lending lending){
-        Map<String, String> lendingLink = new HashMap<>();
-        String lendingUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/lendings/")
-                .path(lending.getLendingNumber())
-                .toUriString();
-        lendingLink.put("href", lendingUri);
-        return lendingLink;
-    }
-
     @Named(value = "bookLink")
     protected Map<String, String> mapBookLink(Book book){
         Map<String, String> bookLink = new HashMap<>();
@@ -50,17 +37,6 @@ public abstract class MapperInterface {
                 .toUriString();
         bookLink.put("href", bookUri);
         return bookLink;
-    }
-
-    @Named(value = "readerLink")
-    protected Map<String, String> mapReaderLink(ReaderDetails readerDetails){
-        Map<String, String> readerLink = new HashMap<>();
-        String readerUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/readers/")
-                .path(readerDetails.getReaderNumber())
-                .toUriString();
-        readerLink.put("href", readerUri);
-        return readerLink;
     }
 
     @Named(value = "authorLink")

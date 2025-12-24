@@ -19,20 +19,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
-import pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.SearchBooksQuery;
 import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
-//import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
-import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
-import pt.psoft.g1.psoftg1.readermanagement.services.ReaderService;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
 import pt.psoft.g1.psoftg1.shared.services.SearchRequest;
-import pt.psoft.g1.psoftg1.usermanagement.model.User;
-import pt.psoft.g1.psoftg1.usermanagement.services.UserService;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -50,9 +44,6 @@ public class BookController {
     //private final LendingService lendingService;
     private final ConcurrencyService concurrencyService;
     private final FileStorageService fileStorageService;
-    private final UserService userService;
-    private final ReaderService readerService;
-    private final IsbnLookupService isbnLookupService;
 
     private final BookViewMapper bookViewMapper;
 
@@ -215,51 +206,11 @@ public class BookController {
         return new ListResponse<>(bookViewMapper.toBookView(books));
     }
 
-    @Operation(summary = "Gets the top 5 books lent")
-    @GetMapping("top5")
-    public ListResponse<BookCountView> getTop5BooksLent() {
-        return new ListResponse<>(bookViewMapper.toBookCountView(bookService.findTop5BooksLent()));
-    }
-
-    @Operation(summary = "Gets some books suggestions based on the reader's interests")
-    @GetMapping("suggestions")
-    public ListResponse<BookView> getBooksSuggestions(Authentication authentication) {
-        User loggedUser = userService.getAuthenticatedUser(authentication);
-        ReaderDetails readerDetails = readerService.findByUsername(loggedUser.getUsername())
-                .orElseThrow(() -> new NotFoundException(ReaderDetails.class, loggedUser.getUsername()));
-
-        return new ListResponse<>(bookViewMapper.toBookView(bookService.getBooksSuggestionsForReader(readerDetails.getReaderNumber())));
-    }
-/*
-    @Operation(summary = "Get average lendings duration")
-    @GetMapping(value = "/{isbn}/avgDuration")
-    public @ResponseBody ResponseEntity<BookAverageLendingDurationView>getAvgLendingDurationByIsbn(
-            @PathVariable("isbn") final String isbn) {
-        final var book = bookService.findByIsbn(isbn);
-        Double avgDuration = lendingService.getAvgLendingDurationByIsbn(isbn);
-
-        return ResponseEntity.ok().body(bookViewMapper.toBookAverageLendingDurationView(book, avgDuration));
-    }
-*/
     @PostMapping("/search")
     public ListResponse<BookView> searchBooks(
             @RequestBody final SearchRequest<SearchBooksQuery> request) {
         final var bookList = bookService.searchBooks(request.getPage(), request.getQuery());
         return new ListResponse<>(bookViewMapper.toBookView(bookList));
-    }
-
-    @Operation(summary = "Lookup ISBN(s) by title using external providers (Google/OpenLibrary)")
-    @GetMapping("/isbn")
-    public ResponseEntity<pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupResult> lookupIsbnByTitle(
-        @RequestParam("title") String title,
-        @RequestParam(value = "mode", defaultValue = "ANY") pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupMode mode) {
-
-        var result = isbnLookupService.getIsbnsByTitle(title, mode);
-
-        if (result.allIsbns().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        return ResponseEntity.ok(result);
     }
 }
 
