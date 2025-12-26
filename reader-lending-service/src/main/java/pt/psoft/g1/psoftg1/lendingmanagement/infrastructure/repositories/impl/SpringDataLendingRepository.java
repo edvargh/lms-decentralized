@@ -27,6 +27,16 @@ public interface SpringDataLendingRepository extends LendingRepository, LendingR
             "WHERE l.lendingNumber.lendingNumber = :lendingNumber")
     Optional<Lending> findByLendingNumber(String lendingNumber);
 
+    @Query("""
+    SELECT l
+    FROM Lending l
+    WHERE l.readerDetails.readerNumber.readerNumber = :readerNumber
+      AND l.isbn = :isbn
+""")
+    List<Lending> findByReaderNumberAndIsbn(@Param("readerNumber") String readerNumber,
+        @Param("isbn") String isbn);
+
+
     //http://www.h2database.com/html/commands.html
 
     @Override
@@ -35,13 +45,14 @@ public interface SpringDataLendingRepository extends LendingRepository, LendingR
             "WHERE YEAR(l.startDate) = YEAR(CURRENT_DATE)")
     int getCountFromCurrentYear();
 
-    @Override
-    @Query("SELECT l " +
-            "FROM Lending l " +
-                "JOIN ReaderDetails r ON l.readerDetails.pk = r.pk " +
-            "WHERE r.readerNumber.readerNumber = :readerNumber " +
-                "AND l.returnedDate IS NULL")
-    List<Lending> listOutstandingByReaderNumber(@Param("readerNumber") String readerNumber);
+    @Query("""
+    SELECT l
+    FROM Lending l
+    WHERE l.readerDetails.readerNumber.readerNumber = :readerNumber
+      AND l.returnedDate IS NULL
+""")
+    List<Lending> findOutstandingByReaderNumber(@Param("readerNumber") String readerNumber);
+
 
     @Override
     @Query(value =

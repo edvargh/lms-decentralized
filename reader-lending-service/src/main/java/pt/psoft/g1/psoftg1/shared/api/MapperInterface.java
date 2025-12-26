@@ -27,26 +27,4 @@ public abstract class MapperInterface {
     }
 
     public <T> T mapOpt(final Optional<T> i) {return i.orElse(null);}
-
-    @Named(value = "lendingLink")
-    protected Map<String, String> mapLendingLink(Lending lending){
-        Map<String, String> lendingLink = new HashMap<>();
-        String lendingUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/lendings/")
-                .path(lending.getLendingNumber())
-                .toUriString();
-        lendingLink.put("href", lendingUri);
-        return lendingLink;
-    }
-
-    @Named(value = "readerLink")
-    protected Map<String, String> mapReaderLink(ReaderDetails readerDetails){
-        Map<String, String> readerLink = new HashMap<>();
-        String readerUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/readers/")
-                .path(readerDetails.getReaderNumber())
-                .toUriString();
-        readerLink.put("href", readerUri);
-        return readerLink;
-    }
 }

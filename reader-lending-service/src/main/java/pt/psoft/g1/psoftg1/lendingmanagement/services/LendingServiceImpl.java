@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
-import pt.psoft.g1.psoftg1.exceptions.LendingForbiddenException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Fine;
 import pt.psoft.g1.psoftg1.lendingmanagement.model.Lending;
@@ -13,8 +12,6 @@ import pt.psoft.g1.psoftg1.lendingmanagement.repositories.LendingRepository;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -39,7 +36,7 @@ public class LendingServiceImpl implements LendingService{
 
     @Override
     public List<Lending> listByReaderNumberAndIsbn(String readerNumber, String isbn, Optional<Boolean> returned){
-        List<Lending> lendings = lendingRepository.listByReaderNumberAndIsbn(readerNumber, isbn);
+        List<Lending> lendings = lendingRepository.findByReaderNumberAndIsbn(readerNumber, isbn);
         if(returned.isEmpty()){
             return lendings;
         }else{
@@ -70,9 +67,10 @@ public class LendingServiceImpl implements LendingService{
     }
 
     @Override
-    public Double getAverageDuration(){
+    public Double getAverageDuration() {
         Double avg = lendingRepository.getAverageDuration();
-        return Double.valueOf(String.format(Locale.US,"%.1f", avg));
+        if (avg == null) return 0.0; // or return null and handle in controller
+        return Double.valueOf(String.format(Locale.US, "%.1f", avg));
     }
 
     @Override
