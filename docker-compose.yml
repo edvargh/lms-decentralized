@@ -16,25 +16,41 @@ services:
       retries: 30
       start_period: 20s
 
+  flyway-identity:
+    image: flyway/flyway:9.22.3
+    depends_on:
+      mysql-identity:
+        condition: service_healthy
+    command:
+      [
+        "-url=jdbc:mysql://mysql-identity:3306/identity_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+        "-user=root",
+        "-password=root",
+        "-connectRetries=60",
+        "migrate"
+      ]
+    volumes:
+      - ./identity-service/src/main/resources/db/migration:/flyway/sql:ro
+    restart: "no"
 
   identity-service:
     build:
       context: .
       dockerfile: identity-service/Dockerfile
-    container_name: identity-service
     depends_on:
-      mysql-identity:
-        condition: service_healthy
+      flyway-identity:
+        condition: service_completed_successfully
     environment:
       SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-identity:3306/identity_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # JWT keys are inside the jar resources via classpath by default,
-      # so you usually don't need to override these.
-    ports:
-      - "8081:8081"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+      SPRING_FLYWAY_ENABLED: "false"
+    expose:
+      - "8081"
+    restart: unless-stopped
+
 
   mysql-catalog:
     image: mysql:8.0
@@ -53,23 +69,41 @@ services:
       retries: 30
       start_period: 20s
 
+  flyway-catalog:
+    image: flyway/flyway:9.22.3
+    depends_on:
+      mysql-catalog:
+        condition: service_healthy
+    command:
+      [
+        "-url=jdbc:mysql://mysql-catalog:3306/catalog_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+        "-user=root",
+        "-password=root",
+        "-connectRetries=60",
+        "migrate"
+      ]
+    volumes:
+      - ./catalog-service/src/main/resources/db/migration:/flyway/sql:ro
+    restart: "no"
+
   catalog-service:
     build:
       context: .
       dockerfile: catalog-service/Dockerfile
-    container_name: catalog-service
     depends_on:
-      mysql-catalog:
-        condition: service_healthy
-
+      flyway-catalog:
+        condition: service_completed_successfully
     environment:
       SERVER_PORT: 8082
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-catalog:3306/catalog_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-    ports:
-      - "8082:8082"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+      SPRING_FLYWAY_ENABLED: "false"
+    expose:
+      - "8082"
+    restart: unless-stopped
+
 
   mysql-reader-lending:
     image: mysql:8.0
@@ -88,25 +122,60 @@ services:
       retries: 30
       start_period: 20s
 
+  flyway-reader-lending:
+    image: flyway/flyway:9.22.3
+    depends_on:
+      mysql-reader-lending:
+        condition: service_healthy
+    command:
+      [
+        "-url=jdbc:mysql://mysql-reader-lending:3306/reader_lending_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+        "-user=root",
+        "-password=root",
+        "-connectRetries=60",
+        "migrate"
+      ]
+    volumes:
+      - ./reader-lending-service/src/main/resources/db/migration:/flyway/sql:ro
+    restart: "no"
+
   reader-lending-service:
     build:
       context: .
       dockerfile: reader-lending-service/Dockerfile
-    container_name: reader-lending-service
     depends_on:
-      mysql-reader-lending:
-        condition: service_healthy
+      flyway-reader-lending:
+        condition: service_completed_successfully
     environment:
       SERVER_PORT: 8083
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reader-lending:3306/reader_lending_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
+      SPRING_FLYWAY_ENABLED: "false"
+    expose:
+      - "8083"
+    restart: unless-stopped
+
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: lms-gateway
+    depends_on:
+      - identity-service
+      - catalog-service
+      - reader-lending-service
     ports:
+      - "8081:8081"
+      - "8082:8082"
       - "8083:8083"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
 
 
 volumes:
   mysql_identity_data:
   mysql_catalog_data:
   mysql_reader_lending_data:
+
