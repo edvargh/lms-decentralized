@@ -1,6 +1,7 @@
 services:
   mysql-identity:
     image: mysql:8.0
+    command: --lower_case_table_names=1
     container_name: mysql-identity
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -54,6 +55,7 @@ services:
 
   mysql-catalog:
     image: mysql:8.0
+    command: --lower_case_table_names=1
     container_name: mysql-catalog
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -107,6 +109,7 @@ services:
 
   mysql-reader-lending:
     image: mysql:8.0
+    command: --lower_case_table_names=1
     container_name: mysql-reader-lending
     environment:
       MYSQL_ROOT_PASSWORD: root
