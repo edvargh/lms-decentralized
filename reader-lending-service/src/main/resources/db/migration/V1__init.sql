@@ -34,14 +34,14 @@ CREATE TABLE `lending` (
                            `commentary` varchar(1024) DEFAULT NULL,
                            `fine_value_per_day_in_cents` int NOT NULL,
                            `isbn` varchar(20) NOT NULL,
-                           `lending_number` varchar(32) DEFAULT NULL,
+                           `LENDING_NUMBER` varchar(32) DEFAULT NULL,
                            `limit_date` date NOT NULL,
                            `returned_date` date DEFAULT NULL,
                            `start_date` date NOT NULL,
                            `version` bigint NOT NULL,
                            `reader_details_pk` bigint NOT NULL,
                            PRIMARY KEY (`pk`),
-                           UNIQUE KEY `UKb1kindqejxfb0yx241lm29e2n` (`lending_number`),
+                           UNIQUE KEY `UKb1kindqejxfb0yx241lm29e2n` (`LENDING_NUMBER`),
                            KEY `FKt045xcbmbhiyrxpucs8csbrrm` (`reader_details_pk`),
                            CONSTRAINT `FKt045xcbmbhiyrxpucs8csbrrm` FOREIGN KEY (`reader_details_pk`) REFERENCES `reader_details` (`pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -65,10 +65,10 @@ CREATE TABLE `fine_seq` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `reader_interests` (
-                                    `reader_pk` bigint NOT NULL,
-                                    `genre` varchar(255) NOT NULL,
-                                    KEY `FK7amrj6vfnok1ffbisr8jbrn0x` (`reader_pk`),
-                                    CONSTRAINT `FK7amrj6vfnok1ffbisr8jbrn0x` FOREIGN KEY (`reader_pk`) REFERENCES `reader_details` (`pk`)
+                                    `READER_PK` bigint NOT NULL,
+                                    `GENRE` varchar(255) NOT NULL,
+                                    KEY `FK7amrj6vfnok1ffbisr8jbrn0x` (`READER_PK`),
+                                    CONSTRAINT `FK7amrj6vfnok1ffbisr8jbrn0x` FOREIGN KEY (`READER_PK`) REFERENCES `reader_details` (`pk`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `forbidden_name` (
@@ -80,3 +80,9 @@ CREATE TABLE `forbidden_name` (
 CREATE TABLE `forbidden_name_seq` (
     `next_val` bigint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO photo_seq (next_val) VALUES (1);
+INSERT INTO reader_details_seq (next_val) VALUES (1);
+INSERT INTO lending_seq (next_val) VALUES (1);
+INSERT INTO fine_seq (next_val) VALUES (1);
+INSERT INTO forbidden_name_seq (next_val) VALUES (1);

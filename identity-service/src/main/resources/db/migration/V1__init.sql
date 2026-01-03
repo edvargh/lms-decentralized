@@ -44,3 +44,7 @@ CREATE TABLE `forbidden_name` (
 CREATE TABLE `forbidden_name_seq` (
     `next_val` bigint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO t_user_seq (next_val) VALUES (1);
+INSERT INTO photo_seq (next_val) VALUES (1);
+INSERT INTO forbidden_name_seq (next_val) VALUES (1);

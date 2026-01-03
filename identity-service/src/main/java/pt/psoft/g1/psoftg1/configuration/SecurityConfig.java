@@ -118,7 +118,6 @@ public class SecurityConfig {
         ).permitAll()
         // Our public endpoints
         .requestMatchers("/api/public/**").permitAll() // public assets & end-points
-        .requestMatchers(HttpMethod.POST, "/api/readers").permitAll() //unregistered should be able to register
         // Our private endpoints
         //authors
         .requestMatchers(HttpMethod.POST,"/api/authors").hasRole(Role.LIBRARIAN)

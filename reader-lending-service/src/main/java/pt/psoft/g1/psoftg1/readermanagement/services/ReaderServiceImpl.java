@@ -4,10 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
+import pt.psoft.g1.psoftg1.readermanagement.integration.IdentityClient;
 import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
@@ -22,14 +26,74 @@ import org.springframework.data.domain.Pageable;
 public class ReaderServiceImpl implements ReaderService {
     private final ReaderRepository readerRepo;
     private final PhotoRepository photoRepository;
+    private final IdentityClient identityClient;
 
 
     @Override
     public ReaderDetails create(CreateReaderRequest request, String photoURI) {
-        throw new ResponseStatusException(
-            HttpStatus.NOT_IMPLEMENTED,
-            "Creating readers is temporarily disabled during migration (depends on identity-service)."
-        );
+        // 1) local guard (avoid duplicates in this DB)
+        if (readerRepo.findByUsername(request.getUsername()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reader already exists for username");
+        }
+
+        final String token = extractBearerToken();
+
+        // 2) create user in identity-service
+        IdentityClient.UserView createdUser;
+        try {
+            createdUser = identityClient.createUser(
+                new IdentityClient.CreateUserRequest(
+                    request.getUsername(),
+                    request.getPassword(),
+                    request.getFullName(),
+                    "READER"
+                ),
+                token
+            );
+        } catch (WebClientResponseException e) {
+            // map identity error to a clean response
+            // Common: 409 username exists, 400 invalid, 403 forbidden
+            throw new ResponseStatusException(HttpStatus.valueOf(e.getStatusCode().value()), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to create user in identity-service", e);
+        }
+
+        // 3) create reader locally
+        try {
+            int count = readerRepo.getCountFromCurrentYear();
+            int nextSeq = count + 1;
+
+            ReaderDetails reader = new ReaderDetails(
+                nextSeq,
+                request.getUsername(),
+                request.getBirthDate(),
+                request.getPhoneNumber(),
+                request.getGdpr(),
+                request.getMarketing(),
+                request.getThirdParty(),
+                photoURI,
+                request.getInterestList()
+            );
+
+            return readerRepo.save(reader);
+
+        } catch (Exception dbOrValidationFailure) {
+            // 4) compensation: delete the created user
+            if (createdUser != null && createdUser.id() != null) {
+                identityClient.deleteUserById(createdUser.id(), token);
+            }
+            throw dbOrValidationFailure instanceof ResponseStatusException rse
+                ? rse
+                : new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create reader locally; user rolled back", dbOrValidationFailure);
+        }
+    }
+
+    private String extractBearerToken() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            return jwtAuth.getToken().getTokenValue();
+        }
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing JWT");
     }
 
 

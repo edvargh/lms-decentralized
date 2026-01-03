@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-@Table(name = "READER_DETAILS")
+@Table(name = "reader_details")
 public class ReaderDetails extends EntityWithPhoto {
 
     @Id
