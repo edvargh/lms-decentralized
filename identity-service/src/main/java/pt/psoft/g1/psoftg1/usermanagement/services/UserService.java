@@ -20,6 +20,8 @@
  */
 package pt.psoft.g1.psoftg1.usermanagement.services;
 
+import static pt.psoft.g1.psoftg1.usermanagement.model.Role.LIBRARIAN;
+import static pt.psoft.g1.psoftg1.usermanagement.model.Role.READER;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -64,27 +66,33 @@ public class UserService implements UserDetailsService {
 
   @Transactional
   public User create(final CreateUserRequest request) {
+
     if (userRepo.findByUsername(request.getUsername()).isPresent()) {
       throw new ConflictException("Username already exists!");
     }
 
     Iterable<String> words = List.of(request.getName().split("\\s+"));
-    for (String word : words){
-      if(!forbiddenNameRepository.findByForbiddenNameIsContained(word).isEmpty()) {
+    for (String word : words) {
+      if (!forbiddenNameRepository.findByForbiddenNameIsContained(word).isEmpty()) {
         throw new IllegalArgumentException("Name contains a forbidden word");
       }
     }
 
+    String role = request.getRole();
+    if (role == null || role.isBlank()) {
+      throw new IllegalArgumentException("Role is required");
+    }
+
     User user;
 
-    switch (request.getRole()) {
-      case Role.READER -> {
-        user = Reader.newReader(request.getUsername(), request.getPassword(), request.getName());
-      }
-      case Role.LIBRARIAN -> {
-        user = Librarian.newLibrarian(request.getUsername(), request.getPassword(), request.getName());
-      }
-      default -> throw new IllegalArgumentException("Invalid role");
+    if (Role.READER.equals(role)) {
+      user = Reader.newReader(request.getUsername(), request.getPassword(), request.getName());
+
+    } else if (Role.LIBRARIAN.equals(role)) {
+      user = Librarian.newLibrarian(request.getUsername(), request.getPassword(), request.getName());
+
+    } else {
+      throw new IllegalArgumentException("Invalid role");
     }
 
     return userRepo.save(user);
