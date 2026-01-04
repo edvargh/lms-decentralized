@@ -1,0 +1,21 @@
+@startuml
+actor Librarian
+participant "API Gateway" as API
+participant "Catalog Service" as Catalog
+database "AuthorRepository" as AuthorRepo
+database "GenreRepository" as GenreRepo
+database "BookRepository" as BookRepo
+
+Librarian -> API : POST /api/books/compound
+API -> Catalog : forward()
+
+Catalog -> GenreRepo : findByString(genre)
+Catalog -> GenreRepo : save(new Genre) [if not exists]
+
+Catalog -> AuthorRepo : save(author) [for each author]
+
+Catalog -> BookRepo : save(new Book)
+
+Catalog --> API : Book
+API --> Librarian : 201 Created
+@enduml

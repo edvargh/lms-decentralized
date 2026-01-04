@@ -1,0 +1,26 @@
+@startuml
+actor Librarian
+participant "API Gateway" as API
+participant "Reader-Lending Service" as RLS
+participant "Identity Rpc Client" as IRC
+queue RabbitMQ
+participant "Identity Command Listener" as ICL
+database "ReaderRepository" as ReaderRepo
+database "UserRepository" as UserRepo
+
+Librarian -> API : POST /api/readers
+API -> RLS : forward()
+
+RLS -> IRC : createUser()
+IRC -> RabbitMQ : CREATE_USER
+ICL -> RabbitMQ : consume CREATE_USER
+ICL -> UserRepo : save(User)
+ICL --> IRC : CreateUserReply(success + userId)
+
+IRC --> RLS : CreateUserReply(success + userId)
+
+RLS -> ReaderRepo : save(ReaderDetails)
+
+RLS -> API : 201 Created
+API -> Librarian : 201 Created
+@enduml
