@@ -18,20 +18,24 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package pt.psoft.g1.psoftg1.usermanagement.services;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+package pt.psoft.g1.psoftg1.exceptions;
 
 /**
- * Based on https://github.com/Yoh0xFF/java-spring-security-example
+ *
+ * @author pgsousa
  *
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class SearchUsersQuery {
-  private String username;
-  private String name;
+public class FileStorageException extends RuntimeException {
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public FileStorageException(final String message) {
+		super(message);
+	}
+
+	public FileStorageException(final String message, final Throwable cause) {
+		super(message, cause);
+	}
 }

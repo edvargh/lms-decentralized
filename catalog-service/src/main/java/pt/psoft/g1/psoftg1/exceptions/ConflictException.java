@@ -18,20 +18,39 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package pt.psoft.g1.psoftg1.usermanagement.services;
+package pt.psoft.g1.psoftg1.exceptions;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.net.MalformedURLException;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Based on https://github.com/Yoh0xFF/java-spring-security-example
+ *
+ * @author pgsousa
  *
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class SearchUsersQuery {
-  private String username;
-  private String name;
+@ResponseStatus(code = HttpStatus.CONFLICT)
+public class ConflictException extends RuntimeException {
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public ConflictException(final String string) {
+		super(string);
+	}
+
+	public ConflictException(final String string, final MalformedURLException ex) {
+		super(string, ex);
+	}
+
+	public ConflictException(final Class<?> clazz, final long id) {
+		super(String.format("Entity %s with id %d not found", clazz.getSimpleName(), id));
+	}
+
+	public ConflictException(final Class<?> clazz, final String id) {
+		super(String.format("Entity %s with id %s not found", clazz.getSimpleName(), id));
+	}
 }
