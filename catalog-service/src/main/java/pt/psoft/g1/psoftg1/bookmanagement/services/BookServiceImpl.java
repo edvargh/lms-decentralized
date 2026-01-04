@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.bookmanagement.model.*;
@@ -70,6 +71,42 @@ public class BookServiceImpl implements BookService {
 		Book newBook = new Book(isbn, request.getTitle(), request.getDescription(), genre, authors, photoURI);
 
         return bookRepository.save(newBook);
+	}
+
+	@Transactional
+	@Override
+	public Book createCompound(CreateBookCompoundRequest request, String isbn) {
+
+		if (bookRepository.findByIsbn(isbn).isPresent()) {
+			throw new ConflictException("Book with ISBN " + isbn + " already exists");
+		}
+
+		// 1) Genre: find or create
+		Genre genre = genreRepository.findByString(request.getGenre())
+				.orElseGet(() -> genreRepository.save(new Genre(request.getGenre())));
+
+		// 2) Authors: create them (simple version)
+		List<Author> authors = new ArrayList<>();
+		for (CreateBookCompoundRequest.CreateAuthorInlineRequest a : request.getAuthors()) {
+			Author author = new Author(a.getName(), a.getBio(), a.getPhotoURI());
+			authors.add(authorRepository.save(author));
+		}
+
+		if (authors.isEmpty()) {
+			throw new IllegalArgumentException("Author list is empty");
+		}
+
+		// 3) Create the book
+		Book newBook = new Book(
+				isbn,
+				request.getTitle(),
+				request.getDescription(),
+				genre,
+				authors,
+				request.getPhotoURI()
+		);
+
+		return bookRepository.save(newBook);
 	}
 
 

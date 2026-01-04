@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
+import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookCompoundRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.SearchBooksQuery;
 import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
@@ -73,6 +74,32 @@ public class BookController {
                 .eTag(Long.toString(book.getVersion()))
                 .body(bookViewMapper.toBookView(book));
     }
+
+    @Operation(summary = "Create Book + Author(s) + Genre in the same process")
+    @PostMapping(value = "/{isbn}/compound")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<BookView> createCompound(
+        @RequestBody @Valid final CreateBookCompoundRequest resource,
+        @PathVariable("isbn") final String isbn) {
+
+        // (Optional) ensure client cannot set a file here; we are using photoURI only
+        Book book;
+        try {
+            book = bookService.createCompound(resource, isbn);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        final var newBookUri = ServletUriComponentsBuilder.fromCurrentRequestUri()
+            .replacePath("/api/books/{isbn}")
+            .buildAndExpand(book.getIsbn())
+            .toUri();
+
+        return ResponseEntity.created(newBookUri)
+            .eTag(Long.toString(book.getVersion()))
+            .body(bookViewMapper.toBookView(book));
+    }
+
 
     @Operation(summary = "Gets a specific Book by isbn")
     @GetMapping(value = "/{isbn}")
