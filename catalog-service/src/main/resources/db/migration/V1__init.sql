@@ -72,3 +72,9 @@ CREATE TABLE `forbidden_name` (
 CREATE TABLE `forbidden_name_seq` (
     `next_val` bigint DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO genre_seq VALUES (1);
+INSERT INTO book_seq VALUES (1);
+INSERT INTO author_seq VALUES (1);
+INSERT INTO photo_seq VALUES (1);
+INSERT INTO forbidden_name_seq VALUES (1);
