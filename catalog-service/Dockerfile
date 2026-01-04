@@ -1,18 +1,16 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /workspace
 
-# Copy only poms first (cache)
 COPY pom.xml pom.xml
 COPY common-contracts/pom.xml common-contracts/pom.xml
-COPY catalog-service/pom.xml catalog-service/pom.xml
 COPY identity-service/pom.xml identity-service/pom.xml
+COPY catalog-service/pom.xml catalog-service/pom.xml
+COPY reader-lending-service/pom.xml reader-lending-service/pom.xml
 
 RUN mvn -q -pl catalog-service -am -DskipTests dependency:go-offline
 
-# Copy full module folders (works even if src/ is missing or differently structured)
 COPY common-contracts common-contracts
 COPY catalog-service catalog-service
-COPY identity-service identity-service
 
 RUN mvn -q -pl catalog-service -am -DskipTests package
 

@@ -11,7 +11,6 @@ import java.util.List;
 
 
 @Getter
-@Setter
 @Data
 @NoArgsConstructor
 @Schema(description = "A DTO for creating a Book")
@@ -37,5 +36,5 @@ public class CreateBookRequest {
     private String photoURI;
 
     @NotNull
-    private List<String> authors;
+    private List<Long> authors;
 }

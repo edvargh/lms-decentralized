@@ -21,9 +21,8 @@ import java.util.Objects;
 })
 public class Book extends EntityWithPhoto {
     @Id
-    @Column(name = "BOOK_ID", length = 36, nullable = false, updatable = false)
-    @Getter
-    private String pk;
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    long pk;
 
     @Version
     @Getter
@@ -92,28 +91,37 @@ public class Book extends EntityWithPhoto {
         setPhotoInternal(null);
     }
 
-
     public void applyPatch(final Long desiredVersion, UpdateBookRequest request) {
-        long expected = (desiredVersion == null) ? 0L : desiredVersion;
-        long current  = (this.version == null) ? 0L : this.version;
+        if (!Objects.equals(this.version, desiredVersion))
+            throw new StaleObjectStateException("Object was already modified by another user", this.pk);
 
-        if (current != expected) {
-            throw new OptimisticLockException("ETag/version mismatch");
+        String title = request.getTitle();
+        String description = request.getDescription();
+        Genre genre = request.getGenreObj();
+        List<Author> authors = request.getAuthorObjList();
+        String photoURI = request.getPhotoURI();
+        if(title != null) {
+            setTitle(title);
         }
 
-        if (request.getTitle() != null)        setTitle(request.getTitle());
-        if (request.getDescription() != null)   setDescription(request.getDescription());
-        if (request.getGenreObj() != null)      setGenre(request.getGenreObj());
-        if (request.getAuthorObjList() != null) setAuthors(request.getAuthorObjList());
-        if (request.getPhotoURI() != null)      setPhotoInternal(request.getPhotoURI());
+        if(description != null) {
+            setDescription(description);
+        }
+
+        if(genre != null) {
+            setGenre(genre);
+        }
+
+        if(authors != null) {
+            setAuthors(authors);
+        }
+
+        if(photoURI != null)
+            setPhotoInternal(photoURI);
+
     }
 
     public String getIsbn(){
         return this.isbn.toString();
-    }
-
-    public void assignPk(String id) {
-        if (id == null || id.isBlank()) throw new IllegalArgumentException("id cannot be blank");
-        this.pk = id;
     }
 }

@@ -1,6 +1,5 @@
 package pt.psoft.g1.psoftg1.authormanagement.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import org.hibernate.StaleObjectStateException;
@@ -12,9 +11,10 @@ import pt.psoft.g1.psoftg1.shared.model.Name;
 @Entity
 public class Author extends EntityWithPhoto {
     @Id
-    @Column(name = "AUTHOR_NUMBER", length = 36, nullable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "AUTHOR_NUMBER")
     @Getter
-    private String authorNumber;
+    private Long authorNumber;
 
     @Version
     private long version;
@@ -37,8 +37,7 @@ public class Author extends EntityWithPhoto {
         return version;
     }
 
-    @JsonIgnore
-    public String getId() {
+    public Long getId() {
         return authorNumber;
     }
 
@@ -71,27 +70,12 @@ public class Author extends EntityWithPhoto {
 
         setPhotoInternal(null);
     }
-
-    public void assignId(String id) {
-        if (id == null || id.isBlank()) throw new IllegalArgumentException("id cannot be blank");
-        this.authorNumber = id;
-    }
-
     public String getName() {
         return this.name.toString();
     }
 
     public String getBio() {
         return this.bio.toString();
-    }
-
-    /**
-     * For persistence mapping only.
-     * Do NOT use in application logic.
-     */
-    @JsonIgnore
-    public void assignVersion(Long v) {
-        this.version = (v == null ? 0L : v.longValue());
     }
 }
 

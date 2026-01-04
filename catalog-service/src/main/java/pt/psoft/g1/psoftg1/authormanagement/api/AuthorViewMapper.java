@@ -8,11 +8,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.authormanagement.model.Author;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookShortView;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
-import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
 
 @Mapper(componentModel = "spring")
 public abstract class AuthorViewMapper extends MapperInterface {
@@ -59,7 +59,7 @@ public abstract class AuthorViewMapper extends MapperInterface {
     }
 
     protected String generatePhotoUrl(Author author) {
-        String authorNumber = author.getAuthorNumber();
+        Long authorNumber = author.getAuthorNumber();
         return ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/authors/{authorNumber}/photo").buildAndExpand(authorNumber).toUri().toString();
     }
 

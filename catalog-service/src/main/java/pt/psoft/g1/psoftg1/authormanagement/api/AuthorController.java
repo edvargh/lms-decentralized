@@ -3,7 +3,6 @@ package pt.psoft.g1.psoftg1.authormanagement.api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,19 +21,16 @@ import pt.psoft.g1.psoftg1.authormanagement.services.CreateAuthorRequest;
 import pt.psoft.g1.psoftg1.authormanagement.services.UpdateAuthorRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookView;
 import pt.psoft.g1.psoftg1.bookmanagement.api.BookViewMapper;
-import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
-//import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
-//import pt.psoft.g1.psoftg1.usermanagement.model.User;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@PermitAll
+
 @Tag(name = "Author", description = "Endpoints for managing Authors")
 @RestController
 @RequiredArgsConstructor
@@ -79,7 +74,7 @@ public class AuthorController {
     @PatchMapping(value = "/{authorNumber}")
     public ResponseEntity<AuthorView> partialUpdate(
             @PathVariable("authorNumber")
-            @Parameter(description = "The number of the Author to find") final String authorNumber,
+            @Parameter(description = "The number of the Author to find") final Long authorNumber,
             final WebRequest request,
             @Valid UpdateAuthorRequest resource) {
 
@@ -108,7 +103,7 @@ public class AuthorController {
     @GetMapping(value = "/{authorNumber}")
     public ResponseEntity<AuthorView> findByAuthorNumber(
             @PathVariable("authorNumber")
-            @Parameter(description = "The number of the Author to find") final String authorNumber) {
+            @Parameter(description = "The number of the Author to find") final Long authorNumber) {
 
         final var author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
@@ -133,7 +128,7 @@ public class AuthorController {
     public ListResponse<BookView> getBooksByAuthorNumber(
            @PathVariable("authorNumber")
              @Parameter(description = "The number of the Author to find")
-             final String authorNumber) {
+             final Long authorNumber) {
 
         //Checking if author exists with this id
         authorService.findByAuthorNumber(authorNumber)
@@ -142,16 +137,14 @@ public class AuthorController {
         return new ListResponse<>(bookViewMapper.toBookView(authorService.findBooksByAuthorNumber(authorNumber)));
     }
 
-    //Know the Top 5 authors which have the most lent books
-    @Operation(summary = "Know the Top 5 authors which have the most lent books")
+    // Know the Top 5 authors which have the most lent books
+    @Operation(summary = "Know the Top 5 authors which have the most lent books (not implemented in catalog-service)")
     @GetMapping("/top5")
     public ListResponse<AuthorLendingView> getTop5() {
-        final var list = authorService.findTopAuthorByLendings();
-
-        if(list.isEmpty())
-            throw new NotFoundException("No authors to show");
-
-        return new ListResponse<>(list);
+        // Stubbed: this feature belongs to reader-lending-service (lending analytics),
+        // because it depends on Lending data.
+        return new ListResponse<>(java.util.List.of());
+        // Alternative: throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
     }
 
     //get - Photo
@@ -160,7 +153,7 @@ public class AuthorController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<byte[]> getSpecificAuthorPhoto(@PathVariable("authorNumber")
                                                              @Parameter(description = "The number of the Author to find")
-                                                             final String authorNumber) {
+                                                             final Long authorNumber) {
 
         Author authorDetails = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException(Author.class, authorNumber));
@@ -186,7 +179,7 @@ public class AuthorController {
     //Co-authors and their respective books
     @Operation(summary = "Get co-authors and their respective books for a specific author")
     @GetMapping("/{authorNumber}/coauthors")
-    public AuthorCoAuthorBooksView getAuthorWithCoAuthors(@PathVariable("authorNumber")String authorNumber) {
+    public AuthorCoAuthorBooksView getAuthorWithCoAuthors(@PathVariable("authorNumber")Long authorNumber) {
         var author = authorService.findByAuthorNumber(authorNumber)
                 .orElseThrow(() -> new NotFoundException("Author not found"));
         var coAuthors = authorService.findCoAuthorsByAuthorNumber(authorNumber);
@@ -202,7 +195,7 @@ public class AuthorController {
     //Delete a foto
     @Operation(summary = "Deletes a author photo")
     @DeleteMapping("/{authorNumber}/photo")
-    public ResponseEntity<Void> deleteBookPhoto(@PathVariable("authorNumber") final String authorNumber) {
+    public ResponseEntity<Void> deleteBookPhoto(@PathVariable("authorNumber") final Long authorNumber) {
 
         Optional<Author> optionalAuthor = authorService.findByAuthorNumber(authorNumber);
         if(optionalAuthor.isEmpty()) {

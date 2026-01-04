@@ -23,21 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public interface SpringDataBookRepository  extends BookRepository, BookRepoCustom, CrudRepository<Book, String> {
+public interface SpringDataBookRepository  extends BookRepository, BookRepoCustom, CrudRepository<Book, Isbn> {
 
     @Query("SELECT b " +
             "FROM Book b " +
             "WHERE b.isbn.isbn = :isbn")
     Optional<Book> findByIsbn(@Param("isbn") String isbn);
-
-    @Override
-    @Query("SELECT new pt.psoft.g1.psoftg1.bookmanagement.services.BookCountDTO(b, COUNT(l)) " +
-                "FROM Book b " +
-                "JOIN Lending l ON l.book = b " +
-                "WHERE l.startDate > :oneYearAgo " +
-                "GROUP BY b " +
-                "ORDER BY COUNT(l) DESC")
-    Page<BookCountDTO> findTop5BooksLent(@Param("oneYearAgo") LocalDate oneYearAgo, Pageable pageable);
 
 
     @Override
@@ -50,23 +41,25 @@ public interface SpringDataBookRepository  extends BookRepository, BookRepoCusto
     @Query("SELECT b FROM Book b WHERE b.title.title LIKE %:title%")
     List<Book> findByTitle(@Param("title") String title);
 
-    @Query(value = """
-      SELECT b.*
-      FROM book b
-      JOIN book_authors ba ON b.book_id = ba.book_book_id
-      JOIN author a        ON ba.authors_author_number = a.author_number
-      WHERE a.name LIKE CONCAT('%', :authorName, '%')
-      """, nativeQuery = true)
+    @Override
+    @Query(value =
+            "SELECT b.* " +
+                    "FROM Book b " +
+                    "JOIN BOOK_AUTHORS on b.pk = BOOK_AUTHORS.BOOK_PK " +
+                    "JOIN AUTHOR a on BOOK_AUTHORS.AUTHORS_AUTHOR_NUMBER = a.AUTHOR_NUMBER " +
+                    "WHERE a.NAME LIKE :authorName"
+            , nativeQuery = true)
     List<Book> findByAuthorName(@Param("authorName") String authorName);
 
-    @Query(value = """
-      SELECT b.*
-      FROM book b
-      JOIN book_authors ba ON b.book_id = ba.book_book_id
-      JOIN author a        ON ba.authors_author_number = a.author_number
-      WHERE a.author_number = :authorNumber
-      """, nativeQuery = true)
-    List<Book> findBooksByAuthorNumber(@Param("authorNumber") String authorNumber);
+    @Override
+    @Query(value =
+            "SELECT b.* " +
+            "FROM Book b " +
+            "JOIN BOOK_AUTHORS on b.pk = BOOK_AUTHORS.BOOK_PK " +
+            "JOIN AUTHOR a on BOOK_AUTHORS.AUTHORS_AUTHOR_NUMBER = a.AUTHOR_NUMBER " +
+            "WHERE a.AUTHOR_NUMBER = :authorNumber "
+            , nativeQuery = true)
+    List<Book> findBooksByAuthorNumber(Long authorNumber);
 
 }
 

@@ -17,9 +17,6 @@ import pt.psoft.g1.psoftg1.authormanagement.repositories.AuthorRepository;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
-//import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
-//import pt.psoft.g1.psoftg1.readermanagement.repositories.ReaderRepository;
-import pt.psoft.g1.psoftg1.shared.id.IdGenerator;
 import pt.psoft.g1.psoftg1.shared.repositories.PhotoRepository;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
@@ -37,13 +34,10 @@ public class BookServiceImpl implements BookService {
 	private final GenreRepository genreRepository;
 	private final AuthorRepository authorRepository;
 	private final PhotoRepository photoRepository;
-	//private final ReaderRepository readerRepository;
-	private final IdGenerator idGenerator;
 
 	@Value("${suggestionsLimitPerGenre}")
 	private long suggestionsLimitPerGenre;
 
-	@org.springframework.cache.annotation.CacheEvict(cacheNames = "bookByIsbn", key = "#isbn")
 	@Override
 	public Book create(CreateBookRequest request, String isbn) {
 
@@ -51,9 +45,9 @@ public class BookServiceImpl implements BookService {
 			throw new ConflictException("Book with ISBN " + isbn + " already exists");
 		}
 
-		List<String> authorNumbers = request.getAuthors();
+		List<Long> authorNumbers = request.getAuthors();
 		List<Author> authors = new ArrayList<>();
-		for (String authorNumber : authorNumbers) {
+		for (Long authorNumber : authorNumbers) {
 
 			Optional<Author> temp = authorRepository.findByAuthorNumber(authorNumber);
 			if(temp.isEmpty()) {
@@ -75,21 +69,55 @@ public class BookServiceImpl implements BookService {
 				.orElseThrow(() -> new NotFoundException("Genre not found"));
 
 		Book newBook = new Book(isbn, request.getTitle(), request.getDescription(), genre, authors, photoURI);
-		newBook.assignPk(idGenerator.newId());
+
+        return bookRepository.save(newBook);
+	}
+
+	@Transactional
+	@Override
+	public Book createCompound(CreateBookCompoundRequest request, String isbn) {
+
+		if (bookRepository.findByIsbn(isbn).isPresent()) {
+			throw new ConflictException("Book with ISBN " + isbn + " already exists");
+		}
+
+		// 1) Genre: find or create
+		Genre genre = genreRepository.findByString(request.getGenre())
+				.orElseGet(() -> genreRepository.save(new Genre(request.getGenre())));
+
+		// 2) Authors: create them (simple version)
+		List<Author> authors = new ArrayList<>();
+		for (CreateBookCompoundRequest.CreateAuthorInlineRequest a : request.getAuthors()) {
+			Author author = new Author(a.getName(), a.getBio(), a.getPhotoURI());
+			authors.add(authorRepository.save(author));
+		}
+
+		if (authors.isEmpty()) {
+			throw new IllegalArgumentException("Author list is empty");
+		}
+
+		// 3) Create the book
+		Book newBook = new Book(
+				isbn,
+				request.getTitle(),
+				request.getDescription(),
+				genre,
+				authors,
+				request.getPhotoURI()
+		);
 
 		return bookRepository.save(newBook);
 	}
 
 
-	@Transactional
 	@Override
 	public Book update(UpdateBookRequest request, String currentVersion) {
 
         var book = findByIsbn(request.getIsbn());
         if(request.getAuthors()!= null) {
-            List<String> authorNumbers = request.getAuthors();
+            List<Long> authorNumbers = request.getAuthors();
             List<Author> authors = new ArrayList<>();
-            for (String authorNumber : authorNumbers) {
+            for (Long authorNumber : authorNumbers) {
                 Optional<Author> temp = authorRepository.findByAuthorNumber(authorNumber);
                 if (temp.isEmpty()) {
                     continue;
@@ -130,14 +158,6 @@ public class BookServiceImpl implements BookService {
 	}
 
 	@Override
-	public List<BookCountDTO> findTop5BooksLent(){
-		LocalDate oneYearAgo = LocalDate.now().minusYears(1);
-		Pageable pageableRules = PageRequest.of(0,5);
-		return this.bookRepository.findTop5BooksLent(oneYearAgo, pageableRules).getContent();
-	}
-
-	@org.springframework.cache.annotation.CacheEvict(cacheNames = "bookByIsbn", key = "#isbn")
-	@Override
 	public Book removeBookPhoto(String isbn, long desiredVersion) {
 		Book book = this.findByIsbn(isbn);
 		String photoFile;
@@ -167,44 +187,11 @@ public class BookServiceImpl implements BookService {
 		return bookRepository.findByAuthorName(authorName + "%");
 	}
 
-	@org.springframework.cache.annotation.Cacheable(cacheNames = "bookByIsbn", key = "#isbn")
 	public Book findByIsbn(String isbn) {
 		return this.bookRepository.findByIsbn(isbn)
 				.orElseThrow(() -> new NotFoundException(Book.class, isbn));
 	}
-/*
-	public List<Book> getBooksSuggestionsForReader(String readerNumber) {
-		List<Book> books = new ArrayList<>();
 
-		ReaderDetails readerDetails = readerRepository.findByReaderNumber(readerNumber)
-				.orElseThrow(() -> new NotFoundException("Reader not found with provided login"));
-		List<Genre> interestList = readerDetails.getInterestList();
-
-		if(interestList.isEmpty()) {
-			throw new NotFoundException("Reader has no interests");
-		}
-
-		for(Genre genre : interestList) {
-			List<Book> tempBooks = bookRepository.findByGenre(genre.toString());
-			if(tempBooks.isEmpty()) {
-				continue;
-			}
-
-			long genreBookCount = 0;
-
-            for (Book loopBook : tempBooks) {
-                if (genreBookCount >= suggestionsLimitPerGenre) {
-                    break;
-                }
-
-                books.add(loopBook);
-				genreBookCount++;
-            }
-		}
-
-		return books;
-	}
-*/
 	@Override
 	public List<Book> searchBooks(Page page, SearchBooksQuery query) {
 		if (page == null) {

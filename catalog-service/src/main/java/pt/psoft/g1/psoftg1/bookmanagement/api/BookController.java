@@ -2,15 +2,12 @@ package pt.psoft.g1.psoftg1.bookmanagement.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.security.PermitAll;
-import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,21 +15,16 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pt.psoft.g1.psoftg1.bookmanagement.model.Book;
 import pt.psoft.g1.psoftg1.bookmanagement.services.BookService;
+import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookCompoundRequest;
 import pt.psoft.g1.psoftg1.bookmanagement.services.CreateBookRequest;
-import pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupService;
 import pt.psoft.g1.psoftg1.bookmanagement.services.SearchBooksQuery;
 import pt.psoft.g1.psoftg1.bookmanagement.services.UpdateBookRequest;
 import pt.psoft.g1.psoftg1.exceptions.ConflictException;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
-//import pt.psoft.g1.psoftg1.lendingmanagement.services.LendingService;
-import pt.psoft.g1.psoftg1.readermanagement.model.ReaderDetails;
-import pt.psoft.g1.psoftg1.readermanagement.services.ReaderService;
 import pt.psoft.g1.psoftg1.shared.api.ListResponse;
 import pt.psoft.g1.psoftg1.shared.services.ConcurrencyService;
 import pt.psoft.g1.psoftg1.shared.services.FileStorageService;
 import pt.psoft.g1.psoftg1.shared.services.SearchRequest;
-import pt.psoft.g1.psoftg1.usermanagement.model.User;
-import pt.psoft.g1.psoftg1.usermanagement.services.UserService;
 
 import java.util.Comparator;
 import java.util.HashSet;
@@ -40,26 +32,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@PermitAll
 @Tag(name = "Books", description = "Endpoints for managing Books")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/books")
 public class BookController {
     private final BookService bookService;
-    //private final LendingService lendingService;
     private final ConcurrencyService concurrencyService;
     private final FileStorageService fileStorageService;
-    private final UserService userService;
-    private final ReaderService readerService;
-    private final IsbnLookupService isbnLookupService;
 
     private final BookViewMapper bookViewMapper;
 
     @Operation(summary = "Register a new Book")
     @PutMapping(value = "/{isbn}")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<BookView> create(@ModelAttribute CreateBookRequest resource, @PathVariable("isbn") String isbn) {
+    public ResponseEntity<BookView> create( CreateBookRequest resource, @PathVariable("isbn") String isbn) {
 
 
         //Guarantee that the client doesn't provide a link on the body, null = no photo or error
@@ -76,7 +63,6 @@ public class BookController {
         try {
             book = bookService.create(resource, isbn);
         }catch (Exception e){
-            e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         //final var savedBook = bookService.save(book);
@@ -89,17 +75,43 @@ public class BookController {
                 .body(bookViewMapper.toBookView(book));
     }
 
+    @Operation(summary = "Create Book + Author(s) + Genre in the same process")
+    @PostMapping(value = "/{isbn}/compound")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<BookView> createCompound(
+        @RequestBody @Valid final CreateBookCompoundRequest resource,
+        @PathVariable("isbn") final String isbn) {
+
+        // (Optional) ensure client cannot set a file here; we are using photoURI only
+        Book book;
+        try {
+            book = bookService.createCompound(resource, isbn);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        final var newBookUri = ServletUriComponentsBuilder.fromCurrentRequestUri()
+            .replacePath("/api/books/{isbn}")
+            .buildAndExpand(book.getIsbn())
+            .toUri();
+
+        return ResponseEntity.created(newBookUri)
+            .eTag(Long.toString(book.getVersion()))
+            .body(bookViewMapper.toBookView(book));
+    }
+
+
     @Operation(summary = "Gets a specific Book by isbn")
     @GetMapping(value = "/{isbn}")
     public ResponseEntity<BookView> findByIsbn(@PathVariable final String isbn) {
 
-        var book = bookService.findByIsbn(isbn);
-        var bookView = bookViewMapper.toBookView(book);
-        long ver = (book.getVersion() == null) ? 0L : book.getVersion();
+        final var book = bookService.findByIsbn(isbn);
+
+        BookView bookView = bookViewMapper.toBookView(book);
 
         return ResponseEntity.ok()
-            .eTag("\"" + ver + "\"")
-            .body(bookView);
+                .eTag(Long.toString(book.getVersion()))
+                .body(bookView);
     }
 
     @Operation(summary = "Deletes a book photo")
@@ -149,31 +161,29 @@ public class BookController {
                                                @Valid final UpdateBookRequest resource) {
 
         final String ifMatchValue = request.getHeader(ConcurrencyService.IF_MATCH);
-        long version = concurrencyService.getVersionFromIfMatchHeader(ifMatchValue);
         if (ifMatchValue == null || ifMatchValue.isEmpty() || ifMatchValue.equals("null")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "You must issue a conditional PATCH using 'if-match'");
+                    "You must issue a conditional PATCH using 'if-match'");
         }
 
         MultipartFile file = resource.getPhoto();
-        if (file != null && !file.isEmpty()) {
-            String fileName = fileStorageService.getRequestPhoto(file);
-            if (fileName != null) {
-                resource.setPhotoURI(fileName);
-            }
+
+        String fileName = fileStorageService.getRequestPhoto(file);
+
+        if (fileName != null) {
+            resource.setPhotoURI(fileName);
         }
 
+        Book book;
         resource.setIsbn(isbn);
         try {
-            Book book = bookService.update(resource, Long.toString(version));
-            return ResponseEntity.ok()
+            book = bookService.update(resource, String.valueOf(concurrencyService.getVersionFromIfMatchHeader(ifMatchValue)));
+        }catch (Exception e){
+            throw new ConflictException("Could not update book: "+ e.getMessage());
+        }
+        return ResponseEntity.ok()
                 .eTag(Long.toString(book.getVersion()))
                 .body(bookViewMapper.toBookView(book));
-        } catch (OptimisticLockException | org.hibernate.StaleObjectStateException ex) {
-            throw new ConflictException("ETag/version mismatch");
-        } catch (Exception e) {
-            throw new ConflictException("Could not update book: " + e.getMessage());
-        }
     }
 
     @Operation(summary = "Gets Books by title or genre")
@@ -218,48 +228,28 @@ public class BookController {
     @Operation(summary = "Gets the top 5 books lent")
     @GetMapping("top5")
     public ListResponse<BookCountView> getTop5BooksLent() {
-        return new ListResponse<>(bookViewMapper.toBookCountView(bookService.findTop5BooksLent()));
+        return new ListResponse<>(java.util.List.of());
     }
 
     @Operation(summary = "Gets some books suggestions based on the reader's interests")
     @GetMapping("suggestions")
-    public ListResponse<BookView> getBooksSuggestions(Authentication authentication) {
-        User loggedUser = userService.getAuthenticatedUser(authentication);
-        ReaderDetails readerDetails = readerService.findByUsername(loggedUser.getUsername())
-                .orElseThrow(() -> new NotFoundException(ReaderDetails.class, loggedUser.getUsername()));
-
-        return new ListResponse<>(bookViewMapper.toBookView(bookService.getBooksSuggestionsForReader(readerDetails.getReaderNumber())));
+    public ResponseEntity<?> getBooksSuggestions() {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+            .body("Not implemented in catalog-service. Will be available after reader-service integration.");
     }
-/*
+
     @Operation(summary = "Get average lendings duration")
     @GetMapping(value = "/{isbn}/avgDuration")
-    public @ResponseBody ResponseEntity<BookAverageLendingDurationView>getAvgLendingDurationByIsbn(
-            @PathVariable("isbn") final String isbn) {
-        final var book = bookService.findByIsbn(isbn);
-        Double avgDuration = lendingService.getAvgLendingDurationByIsbn(isbn);
-
-        return ResponseEntity.ok().body(bookViewMapper.toBookAverageLendingDurationView(book, avgDuration));
+    public ResponseEntity<?> getAvgLendingDurationByIsbn(@PathVariable("isbn") final String isbn) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+            .body("Not implemented in catalog-service. Will be available after lending-service integration.");
     }
-*/
+
     @PostMapping("/search")
     public ListResponse<BookView> searchBooks(
             @RequestBody final SearchRequest<SearchBooksQuery> request) {
         final var bookList = bookService.searchBooks(request.getPage(), request.getQuery());
         return new ListResponse<>(bookViewMapper.toBookView(bookList));
-    }
-
-    @Operation(summary = "Lookup ISBN(s) by title using external providers (Google/OpenLibrary)")
-    @GetMapping("/isbn")
-    public ResponseEntity<pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupResult> lookupIsbnByTitle(
-        @RequestParam("title") String title,
-        @RequestParam(value = "mode", defaultValue = "ANY") pt.psoft.g1.psoftg1.bookmanagement.services.IsbnLookupMode mode) {
-
-        var result = isbnLookupService.getIsbnsByTitle(title, mode);
-
-        if (result.allIsbns().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        return ResponseEntity.ok(result);
     }
 }
 

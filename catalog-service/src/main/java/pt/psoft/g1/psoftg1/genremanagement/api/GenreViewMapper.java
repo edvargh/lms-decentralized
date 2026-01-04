@@ -6,12 +6,12 @@ import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.bookmanagement.services.GenreBookCountDTO;
 import pt.psoft.g1.psoftg1.genremanagement.services.GenreLendingsDTO;
 import pt.psoft.g1.psoftg1.genremanagement.services.GenreLendingsPerMonthDTO;
-import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
 
 import java.util.List;
+import pt.psoft.g1.psoftg1.shared.api.MapperInterface;
 
 @Mapper(componentModel = "spring")
-public abstract class GenreViewMapper extends MapperInterface{
+public abstract class GenreViewMapper extends MapperInterface {
 
     @Mapping(target = "genre", source = "genre")
     public abstract GenreView toGenreView(Genre genre);

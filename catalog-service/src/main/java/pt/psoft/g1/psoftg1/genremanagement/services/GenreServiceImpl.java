@@ -8,7 +8,6 @@ import pt.psoft.g1.psoftg1.bookmanagement.services.GenreBookCountDTO;
 import pt.psoft.g1.psoftg1.exceptions.NotFoundException;
 import pt.psoft.g1.psoftg1.genremanagement.model.Genre;
 import pt.psoft.g1.psoftg1.genremanagement.repositories.GenreRepository;
-import pt.psoft.g1.psoftg1.shared.id.IdGenerator;
 import pt.psoft.g1.psoftg1.shared.services.Page;
 
 import java.time.LocalDate;
@@ -21,17 +20,13 @@ import java.util.Optional;
 public class GenreServiceImpl implements GenreService {
 
     private final GenreRepository genreRepository;
-    private final IdGenerator idGenerator;
 
 
-    @Override
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "genreByName", key = "#name")
     public Optional<Genre> findByString(String name) {
         return genreRepository.findByString(name);
     }
 
     @Override
-    @org.springframework.cache.annotation.Cacheable(cacheNames = "genreAll")
     public Iterable<Genre> findAll() {
         return genreRepository.findAll();
     }
@@ -43,52 +38,7 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
-    @org.springframework.cache.annotation.CacheEvict(cacheNames = {"genreAll", "genreByName"}, allEntries = true)
     public Genre save(Genre genre) {
-        if (genre == null) throw new IllegalArgumentException("Genre is null");
-
-        // Assign only for new entities
-        if (genre.getPk() == null || genre.getPk().isBlank()) {
-            genre.assignPk(idGenerator.newId());
-        }
         return this.genreRepository.save(genre);
-    }
-
-    @Override
-    public List<GenreLendingsPerMonthDTO> getLendingsPerMonthLastYearByGenre() {
-        return genreRepository.getLendingsPerMonthLastYearByGenre();
-    }
-
-    @Override
-    public List<GenreLendingsDTO> getAverageLendings(GetAverageLendingsQuery query, Page page){
-        if (page == null)
-            page = new Page(1, 10);
-
-        final var month = LocalDate.of(query.getYear(), query.getMonth(), 1);
-
-        return genreRepository.getAverageLendingsInMonth(month, page);
-    }
-
-    @Override
-    public List<GenreLendingsPerMonthDTO> getLendingsAverageDurationPerMonth(String start, String end){
-        LocalDate startDate;
-        LocalDate endDate;
-
-        try {
-            startDate = LocalDate.parse(start);
-            endDate = LocalDate.parse(end);
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Expected format is YYYY-MM-DD");
-        }
-
-        if(startDate.isAfter(endDate))
-            throw new IllegalArgumentException("Start date cannot be after end date");
-
-        final var list = genreRepository.getLendingsAverageDurationPerMonth(startDate, endDate);
-
-        if (list.isEmpty())
-            throw new NotFoundException("No objects match the provided criteria");
-
-        return list;
     }
 }
