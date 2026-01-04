@@ -1,4 +1,18 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD-SHELL", "rabbitmq-diagnostics -q ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
   mysql-identity:
     image: mysql:8.0
     command: --lower_case_table_names=1
@@ -41,6 +55,8 @@ services:
     depends_on:
       flyway-identity:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8081
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-identity:3306/identity_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
@@ -48,6 +64,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
       SPRING_FLYWAY_ENABLED: "false"
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      IDENTITY_EXCHANGE: identity.exchange
+      IDENTITY_CREATE_USER_QUEUE: identity.create-user.queue
+      IDENTITY_CREATE_USER_ROUTING_KEY: identity.create-user
+      IDENTITY_DELETE_USER_QUEUE: identity.delete-user.queue
+      IDENTITY_DELETE_USER_ROUTING_KEY: identity.delete-user
     expose:
       - "8081"
     restart: unless-stopped
@@ -149,6 +176,8 @@ services:
     depends_on:
       flyway-reader-lending:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8083
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-reader-lending:3306/reader_lending_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
@@ -156,6 +185,17 @@ services:
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
       SPRING_FLYWAY_ENABLED: "false"
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      IDENTITY_EXCHANGE: identity.exchange
+      IDENTITY_CREATE_USER_ROUTING_KEY: identity.create-user
+      IDENTITY_DELETE_USER_ROUTING_KEY: identity.delete-user
+
+      IDENTITY_RPC_TIMEOUT_MS: 5000
     expose:
       - "8083"
     restart: unless-stopped
